@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+BIN_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PROJECT_DIR=$(realpath $BIN_DIR/..)
+
+rm -rf $PROJECT_DIR/tmp/*
+if [[ ! -z $OVERRIDE ]]; then
+  cp $PROJECT_DIR/templates/docker-compose.override.yml $PROJECT_DIR/tmp
+fi
+
+export LAMBDEE_HOME_DIR=$PROJECT_DIR/tmp
+
+cd $PROJECT_DIR/tmp
+m4 $PROJECT_DIR/templates/docker-compose.yml.m4 -I $PROJECT_DIR > docker-compose.yml
+# docker-compose --env-file $PROJECT_DIR/.env.dev $@

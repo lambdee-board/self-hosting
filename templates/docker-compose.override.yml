@@ -1,0 +1,11 @@
+# Used for development
+
+version: "3.9"
+services:
+  script-service:
+    # platform: linux/amd64
+    build: https://github.com/lambdee-board/lambdee-board-script-service.git#main
+
+  rails:
+    # platform: linux/amd64
+    build: https://github.com/lambdee-board/lambdee-board-web-app.git#main
