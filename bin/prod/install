@@ -3,11 +3,22 @@
 
 set -e
 
-REPO="https://raw.githubusercontent.com/lambdee-board/self-hosting"
+REPO="https://raw.githubusercontent.com/lambdee-board/self-hosting/main"
 DEFAULT_LAMBDEE_DIR="/opt/lambdee"
 CLR_END=$'\e[0m'
 CLR_BLUE=$'\e[0;34m'
 CLR_GREEN=$'\e[0;32m'
+
+# Downloads a file from this repo.
+#
+# @param $1 path to the file inside this repo
+download_file() {
+  if [ "$MODE" == "development" ]; then
+    cat $ROOT_PATH/$1
+  else
+    \curl -sSL $REPO/$1
+  fi
+}
 
 prompt() {
   echo -n -e "$CLR_BLUE[?]$CLR_END $1: "
@@ -16,16 +27,18 @@ prompt() {
 log() {
   echo "$CLR_GREEN[!]$CLR_END $1"
 }
-
-prompt "Enter the installation directory (leave empty for $DEFAULT_LAMBDEE_DIR)"
-read LAMBDEE_DIR
-
-if [ "$LAMBDEE_DIR" == "" ]; then
-  LAMBDEE_DIR=$DEFAULT_LAMBDEE_DIR
+if [ "$MODE" == "development" ]; then
+  ROOT_PATH=$(realpath $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../..)
+  LAMBDEE_DIR="$ROOT_PATH/tmp/lambdee"
+else
+  prompt "Enter the installation directory (leave empty for $DEFAULT_LAMBDEE_DIR)"
+  read LAMBDEE_DIR
+  if [ "$LAMBDEE_DIR" == "" ]; then
+    LAMBDEE_DIR=$DEFAULT_LAMBDEE_DIR
+  fi
 fi
 
 mkdir -p $LAMBDEE_DIR
-# \curl -sSL $REPO/main/bin/prod/manage > $LAMBDEE_DIR/manage
-cp ./bin/prod/manage $LAMBDEE_DIR
+download_file bin/prod/manage > $LAMBDEE_DIR/manage
 chmod +x $LAMBDEE_DIR/manage
 $LAMBDEE_DIR/manage install

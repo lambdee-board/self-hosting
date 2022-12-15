@@ -1,9 +1,29 @@
+dnl;
+dnl; This file should be preprocessed by GNU M4
+dnl; https://www.gnu.org/software/m4/manual/m4.html
+dnl;
+include(`config.m4')dnl
+define(<*M_LAMBDEE_HOST*>, M_ENV_VAR(LAMBDEE_HOST))dnl
+define(<*M_USE_SSL*>, M_ENV_VAR(USE_SSL))dnl
+dnl;
 # WebSocket setup
 map $http_upgrade $connection_upgrade {
     default upgrade;
     '' close;
 }
-
+dnl;
+dnl; if the `$USE_SSL` env variable is set
+dnl; then render this server block
+dnl; (redirect from HTTP to HTTPS)
+dnl;
+ifelse(M_USE_SSL, M_EMPTY, M_EMPTY, <*
+server {
+  listen 80;
+  listen [::]:80;
+  server_name M_LAMBDEE_HOST;
+  return 301 https://$host$request_uri;
+}
+*>)
 upstream rails_server {
   server rails:3000;
 }
@@ -13,8 +33,17 @@ upstream script_service_server {
 }
 
 server {
-  server_name localhost;
+  server_name M_LAMBDEE_HOST;
+ifelse(M_USE_SSL, M_EMPTY, <*
   listen 80;
+*>,
+<*
+  listen 443 ssl;
+
+  ssl_certificate /etc/nginx/lambdee_certs/cert.pem;
+  ssl_certificate_key /etc/nginx/lambdee_certs/key.pem;
+  ssl_verify_depth 2;
+*>)
 
   # nginx will search for static files there
   root   /usr/src/app/public;

@@ -1,7 +1,57 @@
 #!/usr/bin/env bash
 set -e
 
+# == Helpers ==
+
+CLR_END=$'\e[0m'
+CLR_RED=$'\e[0;31m'
+CLR_BLUE=$'\e[0;34m'
+CLR_GREEN=$'\e[0;32m'
+
+# prompt the user for some input
+prompt() {
+  echo -n -e "$CLR_BLUE[?]$CLR_END $1: "
+}
+
+# log a message for the user
+log() {
+  echo "$CLR_GREEN[!]$CLR_END $1"
+}
+
+# log an error message for the user
+error() {
+  echo "$CLR_RED[!]$CLR_END $1"
+}
+
+# == Setup ==
+
+if [ "$MODE" == "development" ]; then
+  ROOT_PATH=$(realpath $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../..)
+  export LAMBDEE_DIR="$ROOT_PATH/tmp/lambdee"
+else
+  export LAMBDEE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+fi
+
 VERSION=0.1.0
+M4_DIR="$LAMBDEE_DIR/tmp/m4"
+LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
+LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
+SSL_CERT_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem
+SSL_KEY_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem
+REPO=https://raw.githubusercontent.com/lambdee-board/self-hosting/main
+
+if command -v docker-compose &> /dev/null; then
+  DOCKER_COMPOSE='docker-compose'
+elif command -v docker &> /dev/null; then
+  DOCKER_COMPOSE='docker compose'
+else
+  error "Docker is not installed! Please install it and retry the installation."
+  exit 1
+fi
+
+DOCKER_COMPOSE_COMMAND="$DOCKER_COMPOSE --file $LAMBDEE_DIR/docker-compose.yml --env-file $LAMBDEE_DIR/.env"
+
+# == Banner ==
 
 echo
 
@@ -36,29 +86,7 @@ cat << EOF
 └─────────────────────────────────────────────────────────────────────────────────────────────────┘
 EOF
 
-export LAMBDEE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-M4_DIR="$LAMBDEE_DIR/tmp/m4"
-LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
-LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
-SSL_CERT_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem
-SSL_KEY_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem
-REPO=https://raw.githubusercontent.com/lambdee-board/self-hosting
-
-# == Helpers ==
-
-CLR_END=$'\e[0m'
-CLR_BLUE=$'\e[0;34m'
-CLR_GREEN=$'\e[0;32m'
-
-# prompt the user for some input
-prompt() {
-  echo -n -e "$CLR_BLUE[?]$CLR_END $1: "
-}
-
-# log a message for the user
-log() {
-  echo "$CLR_GREEN[!]$CLR_END $1"
-}
+# == Functions ==
 
 create_tmp_dir() {
   mkdir -p $LAMBDEE_DIR/tmp
@@ -66,37 +94,44 @@ create_tmp_dir() {
   mkdir -p $LAMBDEE_NGINX_DIR
 }
 
+# Downloads a file from this repo.
+#
+# @param $1 path to the file inside this repo
+download_file() {
+  if [ "$MODE" == "development" ]; then
+    cat $ROOT_PATH/$1
+  else
+    \curl -sSL $REPO/$1
+  fi
+}
+
 # download the GNU M4 config file
 # and place it in a temporary folder
 download_m4_config() {
-  \curl -sSL $REPO/main/m4/config.m4 > $M4_DIR/config.m4
+  download_file m4/config.m4 > $M4_DIR/config.m4
 }
 
 # download the docker compose file
 # and preprocess it with GNU M4
 download_docker_compose_file() {
-  \curl -sSL $REPO/main/templates/docker-compose.yml.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/docker-compose.yml
+  download_file templates/docker-compose.yml.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/docker-compose.yml
 }
 
 # download the docker env file
 # and preprocess it with GNU M4
 download_env_file() {
-  \curl -sSL $REPO/main/templates/.env.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/.env
+  download_file templates/.env.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/.env
 }
 
 # download the NGINX configuration file
 download_nginx_conf() {
-  \curl -sSL $REPO/main/templates/nginx.conf > $LAMBDEE_NGINX_DIR/default.conf
+  mkdir -p $LAMBDEE_NGINX_DIR/conf.d
+  download_file templates/nginx.conf.m4 | m4 -I $M4_DIR > $LAMBDEE_NGINX_DIR/conf.d/default.conf
 }
 
 # @param $1 length of the result
 generate_hex_key() {
   openssl rand -hex $1 | head -c$1
-}
-
-# @param $1 length of the result
-generate_base64_key() {
-  openssl rand -base64 $1 | head -c$1
 }
 
 set_use_ssl() {
@@ -171,35 +206,53 @@ set_docker_env_vars() {
   read NGINX_HTTP_PORT
   export NGINX_HTTP_PORT
   if [ "$NGINX_HTTP_PORT" == "" ]; then
-    LAMBDEE_HOST="80"
+    NGINX_HTTP_PORT="80"
   fi
 
   prompt "Enter the port for HTTPS connections (default: 443)"
   read NGINX_HTTPS_PORT
   export NGINX_HTTPS_PORT
   if [ "$NGINX_HTTPS_PORT" == "" ]; then
-    LAMBDEE_HOST="443"
+    NGINX_HTTPS_PORT="443"
   fi
 
   # generated automatically
-  export DB_PASSWORD=$(generate_base64_key 32)
+  export DB_PASSWORD=$(generate_hex_key 32)
   export JWT_SECRET_KEY=$(generate_hex_key 128)
   export SECRET_KEY_BASE=$(generate_hex_key 128)
   export SCRIPT_SERVICE_API_USER="lambdee#script_service_$(generate_hex_key 16)"
-  export SCRIPT_SERVICE_API_PASSWORD=$(generate_base64_key 64)
-  export SCRIPT_SERVICE_SECRET=$(generate_base64_key 128)
+  export SCRIPT_SERVICE_API_PASSWORD=$(generate_hex_key 64)
+  export SCRIPT_SERVICE_SECRET=$(generate_hex_key 128)
 }
 
 # == Actions ==
+
+start() {
+  if [ "$MODE" == "development" ]; then
+    DAEMON=""
+  else
+    DAEMON="-d"
+  fi
+  $DOCKER_COMPOSE_COMMAND up $DAEMON
+}
+
+stop() {
+  $DOCKER_COMPOSE_COMMAND stop
+}
+
+restart() {
+  $DOCKER_COMPOSE_COMMAND restart
+}
 
 install() {
   log "Lambdee will be installed in $LAMBDEE_DIR"
   create_tmp_dir
   download_m4_config
+  set_docker_env_vars
   download_docker_compose_file
   download_nginx_conf
-  set_docker_env_vars
   download_env_file
+  start
 }
 
 print_help() {
@@ -211,12 +264,21 @@ A script which helps you manage your Lambdee Agile Board instance.
 
 Commands:
   install     Install Lambdee on this system
+  start       Start all Lambdee services
+  stop        Stop all Lambdee services
+  restart     Restart all Lambdee services
 EOT
 }
 
 # == Commands ==
 
 case $1 in
+  "start")
+    start
+    ;;
+  "stop")
+    stop
+    ;;
   "install")
     install
     ;;

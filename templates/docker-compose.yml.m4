@@ -28,9 +28,15 @@ services:
     networks:
       - db
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_NAME} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
 
   script-service:
-    image: lambdee-board/script-service
+    image: lambdee/script-service
     expose:
       - "3001"
     environment:
@@ -47,7 +53,7 @@ services:
     restart: always
 
   rails:
-    image: lambdee-board/rails
+    image: lambdee/rails
     expose:
       - "3000"
     environment:
@@ -71,8 +77,10 @@ services:
       SCRIPT_SERVICE_WS_PROTOCOL: ${SCRIPT_SERVICE_WS_PROTOCOL}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
     depends_on:
-      - postgres
-      - script-service
+      postgres:
+        condition: service_healthy
+      script-service:
+        condition: service_started
     networks:
       - web
       - db
@@ -83,7 +91,7 @@ services:
     restart: always
 
   nginx:
-    image: lambdee-board/nginx
+    image: lambdee/nginx
     ports:
       - '${NGINX_HTTP_PORT}:80'
       - '${NGINX_HTTPS_PORT}:443'
