@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# The base installation script which serves as an entry point
+
 set -e
 
 REPO="https://raw.githubusercontent.com/lambdee-board/self-hosting"
@@ -22,5 +24,8 @@ if [ "$LAMBDEE_DIR" == "" ]; then
   LAMBDEE_DIR=$DEFAULT_LAMBDEE_DIR
 fi
 
-\curl -sSL $REPO/main/bin/prod/manage > $LAMBDEE_DIR/manage
+mkdir -p $LAMBDEE_DIR
+# \curl -sSL $REPO/main/bin/prod/manage > $LAMBDEE_DIR/manage
+cp ./bin/prod/manage $LAMBDEE_DIR
+chmod +x $LAMBDEE_DIR/manage
 $LAMBDEE_DIR/manage install

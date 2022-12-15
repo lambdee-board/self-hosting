@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -e
 
+VERSION=0.1.0
+
 echo
+
 cat << "EOF"
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                                 │
@@ -25,5 +28,198 @@ cat << "EOF"
 ├─────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Open source, extendable, agile board                                                            │
 │ https://github.com/lambdee-board                                                                │
+EOF
+
+cat << EOF
+│                                                                                                 │
+│ VERSION: $(printf '%-8s' $VERSION)                                                                               │
 └─────────────────────────────────────────────────────────────────────────────────────────────────┘
 EOF
+
+export LAMBDEE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+M4_DIR="$LAMBDEE_DIR/tmp/m4"
+LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
+LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
+SSL_CERT_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem
+SSL_KEY_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem
+REPO=https://raw.githubusercontent.com/lambdee-board/self-hosting
+
+# == Helpers ==
+
+CLR_END=$'\e[0m'
+CLR_BLUE=$'\e[0;34m'
+CLR_GREEN=$'\e[0;32m'
+
+# prompt the user for some input
+prompt() {
+  echo -n -e "$CLR_BLUE[?]$CLR_END $1: "
+}
+
+# log a message for the user
+log() {
+  echo "$CLR_GREEN[!]$CLR_END $1"
+}
+
+create_tmp_dir() {
+  mkdir -p $LAMBDEE_DIR/tmp
+  mkdir -p $M4_DIR
+  mkdir -p $LAMBDEE_NGINX_DIR
+}
+
+# download the GNU M4 config file
+# and place it in a temporary folder
+download_m4_config() {
+  \curl -sSL $REPO/main/m4/config.m4 > $M4_DIR/config.m4
+}
+
+# download the docker compose file
+# and preprocess it with GNU M4
+download_docker_compose_file() {
+  \curl -sSL $REPO/main/templates/docker-compose.yml.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/docker-compose.yml
+}
+
+# download the docker env file
+# and preprocess it with GNU M4
+download_env_file() {
+  \curl -sSL $REPO/main/templates/.env.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/.env
+}
+
+# download the NGINX configuration file
+download_nginx_conf() {
+  \curl -sSL $REPO/main/templates/nginx.conf > $LAMBDEE_NGINX_DIR/default.conf
+}
+
+# @param $1 length of the result
+generate_hex_key() {
+  openssl rand -hex $1 | head -c$1
+}
+
+# @param $1 length of the result
+generate_base64_key() {
+  openssl rand -base64 $1 | head -c$1
+}
+
+set_use_ssl() {
+  export USE_SSL="y"
+  export LAMBDEE_PROTOCOL="https"
+  export SCRIPT_SERVICE_WS_PROTOCOL="wss"
+}
+
+generate_letsencrypt_cert() {
+  prompt "Enter your email address for Let's Encrypt"
+  read LETS_ENCRYPT_EMAIL
+
+  mkdir $LAMBDEE_LETS_ENCRYPT_DIR
+  docker pull certbot/certbot
+  docker run -it --rm --name certbot -p 80:80 \
+    -v $LAMBDEE_LETS_ENCRYPT_DIR:/etc/letsencrypt/ certbot/certbot \
+    certonly --email $LETS_ENCRYPT_EMAIL --standalone --preferred-challenges http --noninteractive \
+    --logs-dir /etc/letsencrypt/logs --agree-tos -d $LAMBDEE_HOST
+
+  ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/fullchain.pem $SSL_CERT_FILE
+  ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/privkey.pem $SSL_KEY_FILE
+  set_use_ssl
+}
+
+setup_custom_ssl_cert() {
+  prompt "Do you already have a generated SSL certificate? (y/n)"
+  read ALREADY_PRESENT_SSL_CERT
+  if [ "$ALREADY_PRESENT_SSL_CERT" == "y" ] || [ "$ALREADY_PRESENT_SSL_CERT" == "Y" ]; then
+    prompt "Enter the absolute path to the SSL certificate (eg. /etc/letsencrypt/live/example.com/fullchain.pem)"
+    read CUSTOM_SSL_CERT_FILE
+    ln -s $CUSTOM_SSL_CERT_FILE $SSL_CERT_FILE
+
+    prompt "Enter the absolute path to the SSL key (eg. /etc/letsencrypt/live/example.com/privkey.pem)"
+    read CUSTOM_SSL_KEY_FILE
+    ln -s $CUSTOM_SSL_KEY_FILE $SSL_KEY_FILE
+    export USE_SSL="y"
+  fi
+}
+
+setup_ssl() {
+  prompt "Do you want to generate a free SSL certificate with Let's Encrypt? (y/n)"
+  read $LETS_ENCRYPT_CERT
+  if [ "$LETS_ENCRYPT_CERT" == "y" ] || [ "$LETS_ENCRYPT_CERT" == "Y" ]; then
+    export LETS_ENCRYPT_CERT="y"
+    generate_letsencrypt_cert
+  else
+    setup_custom_ssl_cert
+  fi
+}
+
+set_docker_env_vars() {
+  export LAMBDEE_PROTOCOL="http"
+  export SCRIPT_SERVICE_WS_PROTOCOL="ws"
+
+  prompt "Enter the database name (eg. my_lambdee_db)"
+  read DB_NAME
+  export DB_NAME
+  if [ "$DB_NAME" == "" ]; then
+    DB_NAME="lambdee_db_$(generate_hex_key 10)"
+  fi
+
+  prompt "Enter the domain name for lambdee (eg. lambdee.example.com, localhost)"
+  read LAMBDEE_HOST
+  export LAMBDEE_HOST
+  if [ "$LAMBDEE_HOST" == "" ]; then
+    LAMBDEE_HOST="localhost"
+  else
+    setup_ssl
+  fi
+
+  prompt "Enter the port for HTTP connections (default: 80)"
+  read NGINX_HTTP_PORT
+  export NGINX_HTTP_PORT
+  if [ "$NGINX_HTTP_PORT" == "" ]; then
+    LAMBDEE_HOST="80"
+  fi
+
+  prompt "Enter the port for HTTPS connections (default: 443)"
+  read NGINX_HTTPS_PORT
+  export NGINX_HTTPS_PORT
+  if [ "$NGINX_HTTPS_PORT" == "" ]; then
+    LAMBDEE_HOST="443"
+  fi
+
+  # generated automatically
+  export DB_PASSWORD=$(generate_base64_key 32)
+  export JWT_SECRET_KEY=$(generate_hex_key 128)
+  export SECRET_KEY_BASE=$(generate_hex_key 128)
+  export SCRIPT_SERVICE_API_USER="lambdee#script_service_$(generate_hex_key 16)"
+  export SCRIPT_SERVICE_API_PASSWORD=$(generate_base64_key 64)
+  export SCRIPT_SERVICE_SECRET=$(generate_base64_key 128)
+}
+
+# == Actions ==
+
+install() {
+  log "Lambdee will be installed in $LAMBDEE_DIR"
+  create_tmp_dir
+  download_m4_config
+  download_docker_compose_file
+  download_nginx_conf
+  set_docker_env_vars
+  download_env_file
+}
+
+print_help() {
+  echo
+  log "USAGE: manage COMMAND"
+cat << EOT
+
+A script which helps you manage your Lambdee Agile Board instance.
+
+Commands:
+  install     Install Lambdee on this system
+EOT
+}
+
+# == Commands ==
+
+case $1 in
+  "install")
+    install
+    ;;
+  *)
+    print_help
+esac

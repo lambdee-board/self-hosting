@@ -2,8 +2,8 @@ dnl;
 dnl; This file should be preprocessed by GNU M4
 dnl; https://www.gnu.org/software/m4/manual/m4.html
 dnl;
-include(`m4/config.m4')dnl
-define(<*M_LAMBDEE_HOME_DIR*>, M_ENV_VAR(LAMBDEE_HOME_DIR))dnl
+include(`config.m4')dnl
+define(<*M_LAMBDEE_DIR*>, M_ENV_VAR(LAMBDEE_DIR))dnl
 dnl;
 version: "3.9"
 services:
@@ -24,7 +24,7 @@ services:
     expose:
       - '5432'
     volumes:
-      - M_LAMBDEE_HOME_DIR/postgresql/data:/var/lib/postgresql/data
+      - M_LAMBDEE_DIR/postgresql/data:/var/lib/postgresql/data
     networks:
       - db
     restart: always
@@ -43,7 +43,7 @@ services:
     networks:
       - web
     volumes:
-      - M_LAMBDEE_HOME_DIR/log/script_service:/usr/src/app/log
+      - M_LAMBDEE_DIR/log/script_service:/usr/src/app/log
     restart: always
 
   rails:
@@ -79,7 +79,7 @@ services:
       - kv_store
     volumes:
       - lambdee-public-assets:/usr/src/app/public/assets
-      - M_LAMBDEE_HOME_DIR/log/rails:/usr/src/app/log
+      - M_LAMBDEE_DIR/log/rails:/usr/src/app/log
     restart: always
 
   nginx:
@@ -93,8 +93,9 @@ services:
       - web
     volumes:
       - lambdee-public-assets:/usr/src/app/public/assets:ro
-      - M_LAMBDEE_HOME_DIR/log/nginx:/usr/src/app/log
-      - M_LAMBDEE_HOME_DIR/nginx:/etc/nginx/conf.d
+      - M_LAMBDEE_DIR/log/nginx:/usr/src/app/log
+      - M_LAMBDEE_DIR/nginx/conf.d:/etc/nginx/conf.d:ro
+      - M_LAMBDEE_DIR/nginx/lambdee_certs:/etc/nginx/lambdee_certs:ro
     restart: always
 
 volumes:

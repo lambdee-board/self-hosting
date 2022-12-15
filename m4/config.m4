@@ -15,6 +15,10 @@ dnl;
 define(<*M_NEWLINE*>, <*
 *>)dnl
 dnl;
+dnl; Define an empty string macro
+dnl;
+define(<*M_EMPTY*>, <**>)dnl
+dnl;
 dnl; Define a macro which gets the value
 dnl; of an environment variable.
 dnl;
