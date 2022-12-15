@@ -38,7 +38,7 @@ else
   fi
 fi
 
-mkdir -p $LAMBDEE_DIR
+mkdir -p $LAMBDEE_DIR || sudo mkdir -p $LAMBDEE_DIR
 download_file bin/prod/manage > $LAMBDEE_DIR/manage
 chmod +x $LAMBDEE_DIR/manage
 $LAMBDEE_DIR/manage install
