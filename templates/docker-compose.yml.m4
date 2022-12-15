@@ -13,7 +13,7 @@ services:
     expose:
       - '6379'
     networks:
-      - kv_store
+      - redis
     restart: always
 
   postgres:
@@ -26,7 +26,7 @@ services:
     volumes:
       - M_LAMBDEE_DIR/postgresql/data:/var/lib/postgresql/data
     networks:
-      - db
+      - postgres
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_NAME} -d ${DB_NAME}"]
@@ -41,7 +41,7 @@ services:
       - "3001"
     environment:
       RACK_ENV: production
-      LAMBDEE_HOST: rails:3000
+      LAMBDEE_HOST: web:3000
       LAMBDEE_PROTOCOL: http
       SCRIPT_SERVICE_API_USER: ${SCRIPT_SERVICE_API_USER}
       SCRIPT_SERVICE_API_PASSWORD: ${SCRIPT_SERVICE_API_PASSWORD}
@@ -52,8 +52,8 @@ services:
       - M_LAMBDEE_DIR/log/script_service:/usr/src/app/log
     restart: always
 
-  rails:
-    image: lambdee/rails
+  web:
+    image: lambdee/web
     expose:
       - "3000"
     environment:
@@ -67,6 +67,7 @@ services:
       REDIS_URL: 'redis://redis:6379/0'
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       LAMBDEE_HOST: ${LAMBDEE_HOST}
+      LAMBDEE_INTERNAL_HOST: web
       LAMBDEE_PROTOCOL: ${LAMBDEE_PROTOCOL}
       SCRIPT_SERVICE_API_USER: ${SCRIPT_SERVICE_API_USER}
       SCRIPT_SERVICE_API_PASSWORD: ${SCRIPT_SERVICE_API_PASSWORD}
@@ -83,20 +84,20 @@ services:
         condition: service_started
     networks:
       - web
-      - db
-      - kv_store
+      - postgres
+      - redis
     volumes:
       - lambdee-public-assets:/usr/src/app/public/assets
-      - M_LAMBDEE_DIR/log/rails:/usr/src/app/log
+      - M_LAMBDEE_DIR/log/web:/usr/src/app/log
     restart: always
 
   nginx:
-    image: lambdee/nginx
+    image: nginx
     ports:
       - '${NGINX_HTTP_PORT}:80'
       - '${NGINX_HTTPS_PORT}:443'
     depends_on:
-      - rails
+      - web
     networks:
       - web
     volumes:
@@ -107,10 +108,9 @@ services:
     restart: always
 
 volumes:
-  lambdee-postgres:
   lambdee-public-assets:
 
 networks:
   web:
-  db:
-  kv_store:
+  postgres:
+  redis:

@@ -24,8 +24,8 @@ server {
   return 301 https://$host$request_uri;
 }
 *>)
-upstream rails_server {
-  server rails:3000;
+upstream web_server {
+  server web:3000;
 }
 
 upstream script_service_server {
@@ -92,7 +92,7 @@ ifelse(M_USE_SSL, M_EMPTY, <*
   }
 
   location / {
-    proxy_pass http://rails_server;
+    proxy_pass http://web_server;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header Host $host;
     proxy_redirect off;
