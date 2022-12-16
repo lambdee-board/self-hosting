@@ -191,7 +191,38 @@ setup_ssl() {
   fi
 }
 
+set_docker_nginx_env_vars() {
+  log "No NGINX present on the system"
+
+  export NGINX_PUBLIC_PATH="/usr/src/app/public"
+  export NGINX_SSL_CERT_FILE="/etc/nginx/lambdee_certs/cert.pem"
+  export NGINX_SSL_KEY_FILE="/etc/nginx/lambdee_certs/key.pem"
+  export NGINX_ACCESS_LOG="/usr/src/app/log/access.log"
+  export NGINX_ERROR_LOG="/usr/src/app/log/error.log"
+  export NGINX_WEB_SERVICE_HOST="web"
+  export NGINX_SCRIPT_SERVICE_HOST="script-service"
+}
+
+set_system_nginx_env_vars() {
+  log "NGINX has been detected"
+  export SYSTEM_NGINX="y"
+
+  export NGINX_PUBLIC_PATH="$LAMBDEE_DIR/web/public"
+  export NGINX_SSL_CERT_FILE="$LAMBDEE_DIR/nginx/lambdee_certs/cert.pem"
+  export NGINX_SSL_KEY_FILE="$LAMBDEE_DIR/nginx/lambdee_certs/key.pem"
+  export NGINX_ACCESS_LOG="$LAMBDEE_DIR/nginx/log/access.log"
+  export NGINX_ERROR_LOG="$LAMBDEE_DIR/nginx/log/error.log"
+  export NGINX_WEB_SERVICE_HOST="localhost"
+  export NGINX_SCRIPT_SERVICE_HOST="localhost"
+}
+
 set_docker_env_vars() {
+  if nginx -v &> /dev/null; then
+    set_system_nginx_env_vars
+  else
+    set_docker_nginx_env_vars
+  fi
+
   export LAMBDEE_PROTOCOL="http"
   export SCRIPT_SERVICE_WS_PROTOCOL="ws"
 

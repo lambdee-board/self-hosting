@@ -3,6 +3,11 @@ dnl; This file should be preprocessed by GNU M4
 dnl; https://www.gnu.org/software/m4/manual/m4.html
 dnl;
 include(`config.m4')dnl
+define(<*M_NGINX_SSL_CERT_FILE*>, M_ENV_VAR(NGINX_SSL_CERT_FILE))dnl
+define(<*M_NGINX_SSL_KEY_FILE*>, M_ENV_VAR(NGINX_SSL_KEY_FILE))dnl
+define(<*M_NGINX_PUBLIC_PATH*>, M_ENV_VAR(NGINX_PUBLIC_PATH))dnl
+define(<*M_NGINX_ACCESS_LOG*>, M_ENV_VAR(NGINX_ACCESS_LOG))dnl
+define(<*M_NGINX_ERROR_LOG*>, M_ENV_VAR(NGINX_ERROR_LOG))dnl
 define(<*M_LAMBDEE_HOST*>, M_ENV_VAR(LAMBDEE_HOST))dnl
 define(<*M_USE_SSL*>, M_ENV_VAR(USE_SSL))dnl
 dnl;
@@ -40,18 +45,18 @@ ifelse(M_USE_SSL, M_EMPTY, <*
 <*
   listen 443 ssl;
 
-  ssl_certificate /etc/nginx/lambdee_certs/cert.pem;
-  ssl_certificate_key /etc/nginx/lambdee_certs/key.pem;
+  ssl_certificate M_NGINX_SSL_CERT_FILE;
+  ssl_certificate_key M_NGINX_SSL_KEY_FILE;
   ssl_verify_depth 2;
 *>)
 
   # nginx will search for static files there
-  root   /usr/src/app/public;
+  root   M_NGINX_PUBLIC_PATH;
   index  index.html;
 
   # define where Nginx should write its logs
-  access_log /usr/src/app/log/access.log;
-  error_log /usr/src/app/log/error.log;
+  access_log M_NGINX_ACCESS_LOG;
+  error_log M_NGINX_ERROR_LOG;
 
   # deny requests for files that should never be accessed
   location ~ /\. {

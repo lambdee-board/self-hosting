@@ -4,6 +4,7 @@ dnl; https://www.gnu.org/software/m4/manual/m4.html
 dnl;
 include(`config.m4')dnl
 define(<*M_LAMBDEE_DIR*>, M_ENV_VAR(LAMBDEE_DIR))dnl
+define(<*M_SYSTEM_NGINX*>, M_ENV_VAR(SYSTEM_NGINX))dnl
 dnl;
 version: "3.9"
 services:
@@ -37,8 +38,14 @@ services:
 
   script-service:
     image: lambdee/script-service
+ifelse(M_SYSTEM_NGINX, M_EMPTY, <*
     expose:
       - "3001"
+*>,
+<*
+    ports:
+      - "3001:3001"
+*>)
     environment:
       RACK_ENV: production
       LAMBDEE_HOST: web:3000
@@ -49,13 +56,19 @@ services:
     networks:
       - web
     volumes:
-      - M_LAMBDEE_DIR/log/script_service:/usr/src/app/log
+      - M_LAMBDEE_DIR/script_service/log:/usr/src/app/log
     restart: always
 
   web:
     image: lambdee/web
+ifelse(M_SYSTEM_NGINX, M_EMPTY, <*
     expose:
       - "3000"
+*>,
+<*
+    ports:
+      - "3000:3000"
+*>)
     environment:
       PORT: 3000
       RAILS_ENV: production
@@ -87,10 +100,10 @@ services:
       - postgres
       - redis
     volumes:
-      - lambdee-public-assets:/usr/src/app/public/assets
-      - M_LAMBDEE_DIR/log/web:/usr/src/app/log
+      - M_LAMBDEE_DIR/web/public/assets:/usr/src/app/public/assets
+      - M_LAMBDEE_DIR/web/log:/usr/src/app/log
     restart: always
-
+ifelse(M_SYSTEM_NGINX, M_EMPTY, <*
   nginx:
     image: nginx
     ports:
@@ -101,14 +114,12 @@ services:
     networks:
       - web
     volumes:
-      - lambdee-public-assets:/usr/src/app/public/assets:ro
-      - M_LAMBDEE_DIR/log/nginx:/usr/src/app/log
+      - M_LAMBDEE_DIR/web/public/assets:/usr/src/app/public/assets:ro
+      - M_LAMBDEE_DIR/nginx/log:/usr/src/app/log
       - M_LAMBDEE_DIR/nginx/conf.d:/etc/nginx/conf.d:ro
       - M_LAMBDEE_DIR/nginx/lambdee_certs:/etc/nginx/lambdee_certs:ro
     restart: always
-
-volumes:
-  lambdee-public-assets:
+*>)
 
 networks:
   web:
