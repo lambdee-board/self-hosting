@@ -89,9 +89,10 @@ EOF
 # == Functions ==
 
 create_tmp_dir() {
-  mkdir -p $LAMBDEE_DIR/tmp
-  mkdir -p $M4_DIR
-  mkdir -p $LAMBDEE_NGINX_DIR
+  mkdir -p $LAMBDEE_DIR/tmp &> /dev/null || true
+  mkdir -p $M4_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_NGINX_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_NGINX_DIR/lambdee_certs &> /dev/null || true
 }
 
 # Downloads a file from this repo.
@@ -115,18 +116,21 @@ download_m4_config() {
 # and preprocess it with GNU M4
 download_docker_compose_file() {
   download_file templates/docker-compose.yml.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/docker-compose.yml
+  log "Docker compose file has been generated ($LAMBDEE_DIR/docker-compose.yml)"
 }
 
 # download the docker env file
 # and preprocess it with GNU M4
 download_env_file() {
   download_file templates/.env.m4 | m4 -I $M4_DIR > $LAMBDEE_DIR/.env
+  log "Docker compose ENV file has been generated ($LAMBDEE_DIR/.env)"
 }
 
 # download the NGINX configuration file
 download_nginx_conf() {
   mkdir -p $LAMBDEE_NGINX_DIR/conf.d
   download_file templates/nginx.conf.m4 | m4 -I $M4_DIR > $LAMBDEE_NGINX_DIR/conf.d/default.conf
+  log "NGINX config has been generated ($LAMBDEE_NGINX_DIR/conf.d/default.conf)"
 }
 
 # @param $1 length of the result
@@ -145,7 +149,7 @@ generate_letsencrypt_cert() {
   read LETS_ENCRYPT_EMAIL
 
   log "Pulling the certbot Docker image"
-  mkdir $LAMBDEE_LETS_ENCRYPT_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_LETS_ENCRYPT_DIR &> /dev/null || true
   docker pull certbot/certbot
   docker run -it --rm --name certbot -p 80:80 \
     -v $LAMBDEE_LETS_ENCRYPT_DIR:/etc/letsencrypt/ certbot/certbot \
@@ -224,6 +228,7 @@ set_docker_env_vars() {
   export SCRIPT_SERVICE_API_USER="lambdee#script_service_$(generate_hex_key 16)"
   export SCRIPT_SERVICE_API_PASSWORD=$(generate_hex_key 64)
   export SCRIPT_SERVICE_SECRET=$(generate_hex_key 128)
+  log "Secrets have been generated"
 }
 
 # == Actions ==
@@ -234,14 +239,17 @@ start() {
   else
     DAEMON="-d"
   fi
+  log "Starting all the Lambdee services"
   $DOCKER_COMPOSE_COMMAND up $DAEMON
 }
 
 stop() {
+  log "Stopping all the Lambdee services"
   $DOCKER_COMPOSE_COMMAND stop
 }
 
 restart() {
+  log "Restarting all the Lambdee services"
   $DOCKER_COMPOSE_COMMAND restart
 }
 
