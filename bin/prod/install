@@ -47,7 +47,7 @@ fi
 
 mkdir -p $LAMBDEE_DIR &> /dev/null
 if [ $? -eq 1 ]; then
-  error "Your current user does not have privileges to this folder. Please enter your sudo password."
+  error "Your current user does not have privileges to this folder. Trying sudo."
 
   sudo mkdir -p $LAMBDEE_DIR
   sudo chown -R $USER $LAMBDEE_DIR

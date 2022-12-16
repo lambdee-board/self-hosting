@@ -132,7 +132,7 @@ download_nginx_conf() {
   download_file templates/nginx.conf.m4 | m4 -I $M4_DIR > $TMP_DIR/nginx.conf
   if [ "$SYSTEM_NGINX" == "y" ]; then
     mkdir -p $LAMBDEE_NGINX_DIR/log || true
-    error "Your current user does not have privileges to the /etc/nginx/sites-available folder. Please enter your sudo password."
+    error "Your current user does not have privileges to the /etc/nginx/sites-available folder. Trying sudo."
     sudo cp $TMP_DIR/nginx.conf $LAMBDEE_NGINX_CONFIG_FILE
     sudo rm /etc/nginx/sites-enabled/lambdee.conf || true
     sudo ln -s $LAMBDEE_NGINX_CONFIG_FILE /etc/nginx/sites-enabled/lambdee.conf
