@@ -33,6 +33,7 @@ else
 fi
 
 VERSION=0.1.0
+TMP_DIR="$LAMBDEE_DIR/tmp"
 M4_DIR="$LAMBDEE_DIR/tmp/m4"
 LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
 LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
@@ -89,7 +90,7 @@ EOF
 # == Functions ==
 
 create_tmp_dir() {
-  mkdir -p $LAMBDEE_DIR/tmp &> /dev/null || true
+  mkdir -p $TMP_DIR &> /dev/null || true
   mkdir -p $M4_DIR &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR/lambdee_certs &> /dev/null || true
@@ -128,9 +129,19 @@ download_env_file() {
 
 # download the NGINX configuration file
 download_nginx_conf() {
-  mkdir -p $LAMBDEE_NGINX_DIR/conf.d
-  download_file templates/nginx.conf.m4 | m4 -I $M4_DIR > $LAMBDEE_NGINX_DIR/conf.d/default.conf
-  log "NGINX config has been generated ($LAMBDEE_NGINX_DIR/conf.d/default.conf)"
+  download_file templates/nginx.conf.m4 | m4 -I $M4_DIR > $TMP_DIR/nginx.conf
+  if [ "$SYSTEM_NGINX" == "y" ]; then
+    error "Your current user does not have privileges to the /etc/nginx/sites-available folder. Please enter your sudo password."
+    sudo cp $TMP_DIR/nginx.conf $LAMBDEE_NGINX_CONFIG_FILE
+    ln -s $LAMBDEE_NGINX_CONFIG_FILE /etc/nginx/sites-enabled/lambdee.conf
+    sudo systemctl restart nginx
+    log "NGINX config has been generated ($LAMBDEE_NGINX_CONFIG_FILE)"
+    log "Restarting NGINX"
+    sudo systemctl restart nginx
+  else
+    cp $TMP_DIR/nginx.conf $LAMBDEE_NGINX_CONFIG_FILE
+    log "NGINX config has been generated ($LAMBDEE_NGINX_CONFIG_FILE)"
+  fi
 }
 
 # @param $1 length of the result
@@ -194,6 +205,8 @@ setup_ssl() {
 set_docker_nginx_env_vars() {
   log "No NGINX present on the system"
 
+  mkdir -p $LAMBDEE_NGINX_DIR/conf.d
+  LAMBDEE_NGINX_CONFIG_FILE="$LAMBDEE_NGINX_DIR/conf.d/default.conf"
   export NGINX_PUBLIC_PATH="/usr/src/app/public"
   export NGINX_SSL_CERT_FILE="/etc/nginx/lambdee_certs/cert.pem"
   export NGINX_SSL_KEY_FILE="/etc/nginx/lambdee_certs/key.pem"
@@ -207,11 +220,12 @@ set_system_nginx_env_vars() {
   log "NGINX has been detected"
   export SYSTEM_NGINX="y"
 
+  LAMBDEE_NGINX_CONFIG_FILE="/etc/nginx/sites-available/lambdee.conf"
   export NGINX_PUBLIC_PATH="$LAMBDEE_DIR/web/public"
-  export NGINX_SSL_CERT_FILE="$LAMBDEE_DIR/nginx/lambdee_certs/cert.pem"
-  export NGINX_SSL_KEY_FILE="$LAMBDEE_DIR/nginx/lambdee_certs/key.pem"
-  export NGINX_ACCESS_LOG="$LAMBDEE_DIR/nginx/log/access.log"
-  export NGINX_ERROR_LOG="$LAMBDEE_DIR/nginx/log/error.log"
+  export NGINX_SSL_CERT_FILE="$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem"
+  export NGINX_SSL_KEY_FILE="$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem"
+  export NGINX_ACCESS_LOG="$LAMBDEE_NGINX_DIR/log/access.log"
+  export NGINX_ERROR_LOG="$LAMBDEE_NGINX_DIR/log/error.log"
   export NGINX_WEB_SERVICE_HOST="localhost"
   export NGINX_SCRIPT_SERVICE_HOST="localhost"
 }
