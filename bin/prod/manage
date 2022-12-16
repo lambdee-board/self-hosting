@@ -237,6 +237,16 @@ set_docker_env_vars() {
 
 # == Actions ==
 
+up() {
+  if [ "$MODE" == "development" ]; then
+    DAEMON=""
+  else
+    DAEMON="-d"
+  fi
+  log "Creating and starting all the Lambdee services"
+  $DOCKER_COMPOSE_COMMAND up $DAEMON
+}
+
 start() {
   if [ "$MODE" == "development" ]; then
     DAEMON=""
@@ -244,12 +254,22 @@ start() {
     DAEMON="-d"
   fi
   log "Starting all the Lambdee services"
-  $DOCKER_COMPOSE_COMMAND up $DAEMON
+  $DOCKER_COMPOSE_COMMAND start $DAEMON
+}
+
+top() {
+  log "Displaying the running processes"
+  $DOCKER_COMPOSE_COMMAND top
 }
 
 stop() {
   log "Stopping all the Lambdee services"
   $DOCKER_COMPOSE_COMMAND stop
+}
+
+down() {
+  log "Stopping and removing all the Lambdee services"
+  $DOCKER_COMPOSE_COMMAND down
 }
 
 restart() {
@@ -265,7 +285,7 @@ install() {
   download_docker_compose_file
   download_nginx_conf
   download_env_file
-  start
+  up
 }
 
 print_help() {
@@ -276,21 +296,36 @@ cat << EOT
 A script which helps you manage your Lambdee Agile Board instance.
 
 Commands:
-  install     Install Lambdee on this system
+  top         Display the running processes
   start       Start all Lambdee services
   stop        Stop all Lambdee services
+  up          Create and start all Lambdee services
+  down        Stop and remove all Lambdee services
   restart     Restart all Lambdee services
+  install     Install Lambdee on this system
 EOT
 }
 
 # == Commands ==
 
 case $1 in
+  "top")
+    top
+    ;;
   "start")
     start
     ;;
   "stop")
     stop
+    ;;
+  "up")
+    up
+    ;;
+  "down")
+    down
+    ;;
+  "restart")
+    restart
     ;;
   "install")
     install
