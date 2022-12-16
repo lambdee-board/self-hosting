@@ -9,6 +9,8 @@ define(<*M_NGINX_PUBLIC_PATH*>, M_ENV_VAR(NGINX_PUBLIC_PATH))dnl
 define(<*M_NGINX_ACCESS_LOG*>, M_ENV_VAR(NGINX_ACCESS_LOG))dnl
 define(<*M_NGINX_ERROR_LOG*>, M_ENV_VAR(NGINX_ERROR_LOG))dnl
 define(<*M_LAMBDEE_HOST*>, M_ENV_VAR(LAMBDEE_HOST))dnl
+define(<*M_NGINX_WEB_SERVICE_HOST*>, M_ENV_VAR(NGINX_WEB_SERVICE_HOST))dnl
+define(<*M_NGINX_SCRIPT_SERVICE_HOST*>, M_ENV_VAR(NGINX_SCRIPT_SERVICE_HOST))dnl
 define(<*M_USE_SSL*>, M_ENV_VAR(USE_SSL))dnl
 dnl;
 # WebSocket setup
@@ -30,11 +32,11 @@ server {
 }
 *>)
 upstream web_server {
-  server web:3000;
+  server M_NGINX_WEB_SERVICE_HOST:3000;
 }
 
 upstream script_service_server {
-  server script-service:3001;
+  server M_NGINX_SCRIPT_SERVICE_HOST:3001;
 }
 
 server {
