@@ -6,6 +6,7 @@ set -e
 REPO="https://raw.githubusercontent.com/lambdee-board/self-hosting/main"
 DEFAULT_LAMBDEE_DIR="/opt/lambdee"
 CLR_END=$'\e[0m'
+CLR_RED=$'\e[0;31m'
 CLR_BLUE=$'\e[0;34m'
 CLR_GREEN=$'\e[0;32m'
 
@@ -27,6 +28,12 @@ prompt() {
 log() {
   echo "$CLR_GREEN[!]$CLR_END $1"
 }
+
+# log an error message for the user
+error() {
+  echo "$CLR_RED[!]$CLR_END $1"
+}
+
 if [ "$MODE" == "development" ]; then
   ROOT_PATH=$(realpath $( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )/../..)
   LAMBDEE_DIR="$ROOT_PATH/tmp/lambdee"
@@ -38,7 +45,13 @@ else
   fi
 fi
 
-mkdir -p $LAMBDEE_DIR || sudo mkdir -p $LAMBDEE_DIR
+if mkdir -p $LAMBDEE_DIR &> /dev/null; then
+else
+  error "Your current user does not have privileges to this folder. Please enter your sudo password."
+
+  sudo mkdir -p $LAMBDEE_DIR
+  sudo chown -R $USER $LAMBDEE_DIR
+fi
 download_file bin/prod/manage > $LAMBDEE_DIR/manage
 chmod +x $LAMBDEE_DIR/manage
 $LAMBDEE_DIR/manage install
