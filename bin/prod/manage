@@ -248,13 +248,8 @@ up() {
 }
 
 start() {
-  if [ "$MODE" == "development" ]; then
-    DAEMON=""
-  else
-    DAEMON="-d"
-  fi
   log "Starting all the Lambdee services"
-  $DOCKER_COMPOSE_COMMAND start $DAEMON
+  $DOCKER_COMPOSE_COMMAND start
 }
 
 top() {
