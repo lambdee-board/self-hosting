@@ -15,7 +15,7 @@ prompt() {
 
 # log a message for the user
 log() {
-  echo "$CLR_GREEN[!]$CLR_END $1"
+  echo "$CLR_GREEN[✓]$CLR_END $1"
 }
 
 # log an error message for the user
