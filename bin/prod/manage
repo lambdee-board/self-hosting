@@ -160,8 +160,8 @@ generate_letsencrypt_cert() {
     -v $LAMBDEE_LETS_ENCRYPT_DIR:/etc/letsencrypt/ certbot/certbot \
     -c 'chmod -R o=rx /etc/letsencrypt/live && chmod -R o=rx /etc/letsencrypt/archive'
 
-  ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/fullchain.pem $SSL_CERT_FILE
-  ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/privkey.pem $SSL_KEY_FILE
+  cp $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/fullchain.pem $SSL_CERT_FILE
+  cp $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/privkey.pem $SSL_KEY_FILE
   set_use_ssl
 }
 
@@ -171,11 +171,11 @@ setup_custom_ssl_cert() {
   if [ "$ALREADY_PRESENT_SSL_CERT" == "y" ] || [ "$ALREADY_PRESENT_SSL_CERT" == "Y" ]; then
     prompt "Enter the absolute path to the SSL certificate (eg. /etc/letsencrypt/live/example.com/fullchain.pem)"
     read CUSTOM_SSL_CERT_FILE
-    ln -s $CUSTOM_SSL_CERT_FILE $SSL_CERT_FILE
+    cp $CUSTOM_SSL_CERT_FILE $SSL_CERT_FILE
 
     prompt "Enter the absolute path to the SSL key (eg. /etc/letsencrypt/live/example.com/privkey.pem)"
     read CUSTOM_SSL_KEY_FILE
-    ln -s $CUSTOM_SSL_KEY_FILE $SSL_KEY_FILE
+    cp $CUSTOM_SSL_KEY_FILE $SSL_KEY_FILE
     export USE_SSL="y"
   fi
 }
