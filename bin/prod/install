@@ -43,7 +43,7 @@ else
   if [ "$LAMBDEE_DIR" == "" ]; then
     LAMBDEE_DIR=$DEFAULT_LAMBDEE_DIR
   fi
-  TMP=LAMBDEE_DIR
+  TMP=$LAMBDEE_DIR
   LAMBDEE_DIR=$(realpath $TMP)
 fi
 
