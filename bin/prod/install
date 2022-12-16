@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 # The base installation script which serves as an entry point
 
-set -e
-
 REPO="https://raw.githubusercontent.com/lambdee-board/self-hosting/main"
 DEFAULT_LAMBDEE_DIR="/opt/lambdee"
 CLR_END=$'\e[0m'
