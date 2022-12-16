@@ -144,7 +144,8 @@ generate_letsencrypt_cert() {
   prompt "Enter your email address for Let's Encrypt"
   read LETS_ENCRYPT_EMAIL
 
-  mkdir $LAMBDEE_LETS_ENCRYPT_DIR
+  log "Pulling the certbot Docker image"
+  mkdir $LAMBDEE_LETS_ENCRYPT_DIR &> /dev/null || true
   docker pull certbot/certbot
   docker run -it --rm --name certbot -p 80:80 \
     -v $LAMBDEE_LETS_ENCRYPT_DIR:/etc/letsencrypt/ certbot/certbot \
@@ -173,7 +174,7 @@ setup_custom_ssl_cert() {
 
 setup_ssl() {
   prompt "Do you want to generate a free SSL certificate with Let's Encrypt? (y/n)"
-  read $LETS_ENCRYPT_CERT
+  read LETS_ENCRYPT_CERT
   if [ "$LETS_ENCRYPT_CERT" == "y" ] || [ "$LETS_ENCRYPT_CERT" == "Y" ]; then
     export LETS_ENCRYPT_CERT="y"
     generate_letsencrypt_cert

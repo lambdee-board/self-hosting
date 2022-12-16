@@ -43,10 +43,12 @@ else
   if [ "$LAMBDEE_DIR" == "" ]; then
     LAMBDEE_DIR=$DEFAULT_LAMBDEE_DIR
   fi
+  TMP=LAMBDEE_DIR
+  LAMBDEE_DIR=$(realpath $TMP)
 fi
 
-if mkdir -p $LAMBDEE_DIR &> /dev/null; then
-else
+mkdir -p $LAMBDEE_DIR &> /dev/null
+if [ $? -eq 1 ]; then
   error "Your current user does not have privileges to this folder. Please enter your sudo password."
 
   sudo mkdir -p $LAMBDEE_DIR
