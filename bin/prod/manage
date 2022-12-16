@@ -156,6 +156,10 @@ generate_letsencrypt_cert() {
     certonly --email $LETS_ENCRYPT_EMAIL --standalone --preferred-challenges http --noninteractive \
     --logs-dir /etc/letsencrypt/logs --agree-tos -d $LAMBDEE_HOST
 
+  docker run --name certbot --rm --entrypoint '/bin/sh' \
+    -v $LAMBDEE_LETS_ENCRYPT_DIR:/etc/letsencrypt/ certbot/certbot \
+    -c 'chmod -R o=rx /etc/letsencrypt/live && chmod -R o=rx /etc/letsencrypt/archive'
+
   ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/fullchain.pem $SSL_CERT_FILE
   ln -s $LAMBDEE_LETS_ENCRYPT_DIR/live/$LAMBDEE_HOST/privkey.pem $SSL_KEY_FILE
   set_use_ssl
