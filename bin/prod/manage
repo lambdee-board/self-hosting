@@ -133,7 +133,7 @@ download_nginx_conf() {
   if [ "$SYSTEM_NGINX" == "y" ]; then
     error "Your current user does not have privileges to the /etc/nginx/sites-available folder. Please enter your sudo password."
     sudo cp $TMP_DIR/nginx.conf $LAMBDEE_NGINX_CONFIG_FILE
-    ln -s $LAMBDEE_NGINX_CONFIG_FILE /etc/nginx/sites-enabled/lambdee.conf
+    sudo ln -s $LAMBDEE_NGINX_CONFIG_FILE /etc/nginx/sites-enabled/lambdee.conf
     sudo systemctl restart nginx
     log "NGINX config has been generated ($LAMBDEE_NGINX_CONFIG_FILE)"
     log "Restarting NGINX"
