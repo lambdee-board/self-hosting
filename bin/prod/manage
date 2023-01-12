@@ -32,7 +32,7 @@ else
   export LAMBDEE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 fi
 
-VERSION=0.1.0
+VERSION=0.1.1
 TMP_DIR="$LAMBDEE_DIR/tmp"
 M4_DIR="$LAMBDEE_DIR/tmp/m4"
 LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
