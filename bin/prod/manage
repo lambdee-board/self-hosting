@@ -272,6 +272,20 @@ set_docker_env_vars() {
     NGINX_HTTPS_PORT="443"
   fi
 
+  prompt "Enter the admin account email (default: admin@example.com)"
+  read DEFAULT_ADMIN_USER_EMAIL
+  export DEFAULT_ADMIN_USER_EMAIL
+  if [ "$DEFAULT_ADMIN_USER_EMAIL" == "" ]; then
+    DEFAULT_ADMIN_USER_EMAIL="admin@example.com"
+  fi
+
+  prompt "Enter the admin account password (default: adminadmin)"
+  read DEFAULT_ADMIN_USER_PASSWORD
+  export DEFAULT_ADMIN_USER_PASSWORD
+  if [ "$DEFAULT_ADMIN_USER_PASSWORD" == "" ]; then
+    DEFAULT_ADMIN_USER_PASSWORD="adminadmin"
+  fi
+
   # generated automatically
   export DB_PASSWORD=$(generate_hex_key 32)
   export JWT_SECRET_KEY=$(generate_hex_key 128)
