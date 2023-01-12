@@ -37,6 +37,8 @@ TMP_DIR="$LAMBDEE_DIR/tmp"
 M4_DIR="$LAMBDEE_DIR/tmp/m4"
 LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
 LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
+LAMBDEE_POSTGRES_DIR="$LAMBDEE_DIR/postgresql"
+LAMBDEE_SCRIPT_SERVICE_DIR="$LAMBDEE_DIR/script_service"
 SSL_CERT_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem
 SSL_KEY_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem
 REPO=https://raw.githubusercontent.com/lambdee-board/self-hosting/main
@@ -93,6 +95,10 @@ create_tmp_dir() {
   mkdir -p $TMP_DIR &> /dev/null || true
   mkdir -p $M4_DIR &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_POSTGRES_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_POSTGRES_DIR/data &> /dev/null || true
+  mkdir -p $LAMBDEE_SCRIPT_SERVICE_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_SCRIPT_SERVICE_DIR/log &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR/lambdee_certs &> /dev/null || true
 }
 
@@ -270,6 +276,20 @@ set_docker_env_vars() {
   export NGINX_HTTPS_PORT
   if [ "$NGINX_HTTPS_PORT" == "" ]; then
     NGINX_HTTPS_PORT="443"
+  fi
+
+  prompt "Enter the admin account email (default: admin@example.com)"
+  read DEFAULT_ADMIN_USER_EMAIL
+  export DEFAULT_ADMIN_USER_EMAIL
+  if [ "$DEFAULT_ADMIN_USER_EMAIL" == "" ]; then
+    DEFAULT_ADMIN_USER_EMAIL="admin@example.com"
+  fi
+
+  prompt "Enter the admin account password (default: adminadmin)"
+  read DEFAULT_ADMIN_USER_PASSWORD
+  export DEFAULT_ADMIN_USER_PASSWORD
+  if [ "$DEFAULT_ADMIN_USER_PASSWORD" == "" ]; then
+    DEFAULT_ADMIN_USER_PASSWORD="adminadmin"
   fi
 
   # generated automatically
