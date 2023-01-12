@@ -37,6 +37,8 @@ TMP_DIR="$LAMBDEE_DIR/tmp"
 M4_DIR="$LAMBDEE_DIR/tmp/m4"
 LAMBDEE_LETS_ENCRYPT_DIR="$LAMBDEE_DIR/letsencrypt"
 LAMBDEE_NGINX_DIR="$LAMBDEE_DIR/nginx"
+LAMBDEE_POSTGRES_DIR="$LAMBDEE_DIR/postgresql"
+LAMBDEE_SCRIPT_SERVICE_DIR="$LAMBDEE_DIR/script_service"
 SSL_CERT_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/cert.pem
 SSL_KEY_FILE=$LAMBDEE_NGINX_DIR/lambdee_certs/key.pem
 REPO=https://raw.githubusercontent.com/lambdee-board/self-hosting/main
@@ -93,6 +95,10 @@ create_tmp_dir() {
   mkdir -p $TMP_DIR &> /dev/null || true
   mkdir -p $M4_DIR &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_POSTGRES_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_POSTGRES_DIR/data &> /dev/null || true
+  mkdir -p $LAMBDEE_SCRIPT_SERVICE_DIR &> /dev/null || true
+  mkdir -p $LAMBDEE_SCRIPT_SERVICE_DIR/log &> /dev/null || true
   mkdir -p $LAMBDEE_NGINX_DIR/lambdee_certs &> /dev/null || true
 }
 
