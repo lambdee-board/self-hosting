@@ -328,6 +328,7 @@ install() {
   download_nginx_conf
   download_env_file
   up
+  log "Default user -- email: admin@example.com; password: adminadmin"
 }
 
 print_help() {
