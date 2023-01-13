@@ -238,6 +238,35 @@ set_system_nginx_env_vars() {
   export NGINX_SCRIPT_SERVICE_HOST="localhost"
 }
 
+configure_smtp() {
+  prompt "Enter the SMTP server address (eg. smtp.gmail.com, smtp.sendgrid.net)"
+  read SMTP_SERVER_ADDRESS
+  export SMTP_SERVER_ADDRESS
+
+  prompt "Enter the SMTP server port (default: 587)"
+  read SMTP_SERVER_PORT
+  export SMTP_SERVER_PORT
+  if [ "$SMTP_SERVER_PORT" == "" ]; then
+    SMTP_SERVER_PORT="587"
+  fi
+
+  prompt "Enter the SMTP user name (eg. my_email@gmail.com)"
+  read SMTP_USER_NAME
+  export SMTP_USER_NAME
+
+  prompt "Enter the SMTP password (eg. myPassword123)"
+  read SMTP_PASSWORD
+  export SMTP_PASSWORD
+
+  prompt "Enter the email address from which emails will be sent (eg: my_email@gmail.com)"
+  read SMTP_MAIL_FROM
+  export SMTP_MAIL_FROM
+
+  prompt "Enter the SMTP domain (eg. my_domain.com)"
+  read SMTP_MAIL_DOMAIN
+  export SMTP_MAIL_DOMAIN
+}
+
 set_docker_env_vars() {
   if nginx -v &> /dev/null; then
     set_system_nginx_env_vars
@@ -290,6 +319,13 @@ set_docker_env_vars() {
   export DEFAULT_ADMIN_USER_PASSWORD
   if [ "$DEFAULT_ADMIN_USER_PASSWORD" == "" ]; then
     DEFAULT_ADMIN_USER_PASSWORD="adminadmin"
+  fi
+
+  prompt "Do you want to configure SMTP (y/n)"
+  read CONFIGURE_SMTP
+  if [ "$CONFIGURE_SMTP" == "y" ] || [ "$CONFIGURE_SMTP" == "Y" ]; then
+    export CONFIGURE_SMTP="y"
+    configure_smtp
   fi
 
   # generated automatically
