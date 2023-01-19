@@ -335,6 +335,10 @@ set_docker_env_vars() {
   export SCRIPT_SERVICE_API_USER="lambdee#script_service_$(generate_hex_key 16)"
   export SCRIPT_SERVICE_API_PASSWORD=$(generate_hex_key 64)
   export SCRIPT_SERVICE_SECRET=$(generate_hex_key 128)
+  # encryption
+  export ENCRYPTION_PRIMARY_KEY=$(generate_hex_key 32)
+  export ENCRYPTION_DETERMINISTIC_KEY=$(generate_hex_key 32)
+  export ENCRYPTION_KEY_DERIVATION_SALT=$(generate_hex_key 32)
   log "Secrets have been generated"
 }
 
